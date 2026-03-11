@@ -12,6 +12,10 @@ const state = {
   ambientBrightness: 0.68,
   seatPosition: 54,
   activeProfile: "Driver 1",
+  theme: "gray",
+  tripDistanceKm: 0,
+  tripDurationMin: 0,
+  tripEfficiency: 5.2,
   media: {
     playing: false,
     track: "No media playing",
@@ -98,6 +102,7 @@ function updateStatus() {
   elems.speedValue.textContent = `${state.speed} km/h`;
   elems.rangeValue.textContent = `${state.rangeKm} km`;
   elems.trafficValue.textContent = state.traffic;
+  elems.tripValue.textContent = `${state.tripDistanceKm.toFixed(1)} km`;
   elems.cabinTemp.textContent = `${state.cabinTemp}°C`;
   elems.fanLevel.textContent = state.fanLevel;
   elems.nowPlaying.textContent = state.media.track;
@@ -108,6 +113,9 @@ function updateStatus() {
       : `${state.passengers} passenger${state.passengers === 1 ? "" : "s"} onboard`;
   elems.securityStatus.textContent = state.securityLocked ? "All doors locked" : "Unlocked";
   elems.settingsStatus.textContent = "Tap to customize";
+
+  document.body.classList.remove("theme-light", "theme-gray", "theme-dark");
+  document.body.classList.add(`theme-${state.theme}`);
 }
 
 function panicStop() {
@@ -197,6 +205,10 @@ function simulateDrive() {
   }
 
   state.rangeKm = Math.max(75, state.rangeKm - state.speed / 120);
+  state.tripDistanceKm += state.speed / 3600; // km per second
+  state.tripDurationMin += 1 / 60; // minutes per second
+  state.tripEfficiency = 4 + Math.sin(state.tripDistanceKm / 10) * 1.5;
+
   state.traffic = ["Light", "Moderate", "Heavy"][Math.floor(Math.random() * 3)];
 
   if (Math.random() < 0.01) {
@@ -234,6 +246,7 @@ function renderSidePanel(type) {
   const titleMap = {
     media: "Media Library",
     safety: "Safety Center",
+    trip: "Trip Summary",
     car: "Car Controls",
     settings: "Settings",
   };
@@ -331,6 +344,39 @@ function renderSidePanel(type) {
         </section>
       `;
     },
+    trip: () => {
+      const hours = Math.floor(state.tripDurationMin / 60);
+      const minutes = Math.floor(state.tripDurationMin % 60);
+      const efficiency = state.tripEfficiency.toFixed(1);
+
+      const makeBar = (label, value, max) => {
+        const pct = Math.min(1, value / max);
+        return `
+          <div class="chart-row">
+            <div class="chart-label">${label}</div>
+            <div class="chart-bar">
+              <div class="chart-fill" style="width: ${pct * 100}%"></div>
+            </div>
+            <div class="chart-value">${value}</div>
+          </div>
+        `;
+      };
+
+      return `
+        <section class="side-panel__section">
+          <h3>Trip Summary</h3>
+          <div class="side-panel__text">Distance: ${state.tripDistanceKm.toFixed(1)} km</div>
+          <div class="side-panel__text">Duration: ${hours}h ${minutes}m</div>
+          <div class="side-panel__text">Efficiency: ${efficiency} km/kWh</div>
+        </section>
+        <section class="side-panel__section">
+          <h3>Trip Chart</h3>
+          ${makeBar("Distance", state.tripDistanceKm, 200)}
+          ${makeBar("Efficiency", state.tripEfficiency, 10)}
+          ${makeBar("Range", state.rangeKm, 500)}
+        </section>
+      `;
+    },
     settings: () => {
       return `
         <section class="side-panel__section">
@@ -339,6 +385,14 @@ function renderSidePanel(type) {
             <li><button data-action="toggleNightMode">Night mode</button></li>
             <li><button data-action="toggleNotifications">Notifications</button></li>
             <li><button data-action="resetDefaults">Reset defaults</button></li>
+          </ul>
+        </section>
+        <section class="side-panel__section">
+          <h3>Theme</h3>
+          <ul class="side-panel__list">
+            <li><button data-action="setTheme" data-value="light">Light</button></li>
+            <li><button data-action="setTheme" data-value="gray">Gray</button></li>
+            <li><button data-action="setTheme" data-value="dark">Dark</button></li>
           </ul>
         </section>
       `;
@@ -383,7 +437,22 @@ function renderSidePanel(type) {
           showAction("Notifications", "Notification preferences can be managed in the full settings screen.");
         }
         if (action === "resetDefaults") {
+          state.theme = "gray";
+          state.cabinTemp = 22;
+          state.fanLevel = 2;
+          state.interiorBrightness = 0.8;
+          state.ambientBrightness = 0.68;
+          state.seatPosition = 54;
+          updateStatus();
+          renderSidePanel(type);
           showAction("Reset Defaults", "Restored to default preferences.");
+        }
+        if (action === "setTheme") {
+          const value = btn.dataset.value;
+          if (value) {
+            state.theme = value;
+            updateStatus();
+          }
         }
         if (action === "toggleMode") {
           toggleMode();
@@ -520,12 +589,26 @@ function setupEventListeners() {
     renderSidePanel("settings");
   });
 
+  buttons.fullMapBtn.addEventListener("click", () => {
+    elems.mapFull.setAttribute("aria-hidden", "false");
+    elems.mapFullBody.textContent = "Full-screen map mode. Swipe down or tap ✕ to close.";
+  });
+
+  elems.mapFullClose.addEventListener("click", () => {
+    elems.mapFull.setAttribute("aria-hidden", "true");
+  });
+
+  elems.mapFullMode.addEventListener("click", () => {
+    elems.mapFullBody.textContent = "Zooming, panning, and live traffic overlays would appear here.";
+  });
+
   elems.modalBackdrop.addEventListener("click", modal.close);
   elems.modalClose.addEventListener("click", modal.close);
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       modal.close();
       closeSidePanel();
+      elems.mapFull.setAttribute("aria-hidden", "true");
     }
   });
 
