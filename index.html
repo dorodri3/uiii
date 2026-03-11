@@ -8,6 +8,17 @@
 </head>
 <body>
   <header class="top-bar">
+    <div class="safety-row">
+      <div class="safety-label">
+        <span class="safety-icon">🚨</span>
+        <span>Safety</span>
+      </div>
+      <div class="safety-controls">
+        <button class="control-btn emergency" id="emergencyStopBtn">EMERGENCY STOP</button>
+        <button class="control-btn" id="switchModeBtn">Switch Mode</button>
+      </div>
+    </div>
+
     <div class="brand">
       <span class="brand__logo">🛡</span>
       <div>
@@ -29,11 +40,6 @@
         <div class="status-title">Traffic</div>
         <div class="status-value" id="trafficValue">Light</div>
       </div>
-    </div>
-
-    <div class="top-controls">
-      <button class="control-btn" id="emergencyStopBtn">EMERGENCY STOP</button>
-      <button class="control-btn" id="switchModeBtn">Switch Mode</button>
     </div>
   </header>
 
@@ -127,6 +133,23 @@
       <span id="timeDisplay"></span>
     </div>
   </footer>
+
+  <!-- Side features panel -->
+  <div class="side-panel" id="sidePanel" aria-hidden="true">
+    <div class="side-panel__backdrop" id="sideBackdrop"></div>
+    <aside class="side-panel__content" role="complementary">
+      <header class="side-panel__header">
+        <div class="side-panel__tabs">
+          <button class="tab-btn active" data-panel="media" aria-controls="sideBody">Media</button>
+          <button class="tab-btn" data-panel="safety" aria-controls="sideBody">Safety</button>
+          <button class="tab-btn" data-panel="settings" aria-controls="sideBody">Settings</button>
+        </div>
+        <button class="side-close" id="sideClose">✕</button>
+      </header>
+      <div class="side-panel__body" id="sideBody"></div>
+      <div class="side-panel__footer" id="sideFooter"></div>
+    </aside>
+  </div>
 
   <!-- Modal Templates -->
   <div class="modal" id="modal" aria-hidden="true" role="dialog" aria-modal="true">

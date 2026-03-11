@@ -35,6 +35,12 @@ const elems = {
   modalFooter: document.getElementById("modalFooter"),
   modalBackdrop: document.getElementById("modalBackdrop"),
   modalClose: document.getElementById("modalClose"),
+  sidePanel: document.getElementById("sidePanel"),
+  sideBackdrop: document.getElementById("sideBackdrop"),
+  sideClose: document.getElementById("sideClose"),
+  sideBody: document.getElementById("sideBody"),
+  sideFooter: document.getElementById("sideFooter"),
+  sideTitle: document.getElementById("sideTitle"),
 };
 
 const buttons = {
@@ -216,6 +222,116 @@ function showAction(title, message) {
   });
 }
 
+function closeSidePanel() {
+  elems.sidePanel.setAttribute("aria-hidden", "true");
+  const activeTab = document.querySelector(".tab-btn.active");
+  if (activeTab) activeTab.classList.remove("active");
+}
+
+function renderSidePanel(type) {
+  const titleMap = {
+    media: "Media Library",
+    safety: "Safety Center",
+    settings: "Settings",
+  };
+
+  const bodyRenderers = {
+    media: () => {
+      return `
+        <section class="side-panel__section">
+          <h3>Now Playing</h3>
+          <div class="side-panel__text">${state.media.track}</div>
+        </section>
+        <section class="side-panel__section">
+          <h3>Playlists</h3>
+          <ul class="side-panel__list">
+            <li><button data-track="Driving playlist">Driving playlist</button></li>
+            <li><button data-track="Road trip mix">Road trip mix</button></li>
+            <li><button data-track="Podcast: Autonomy & Safety">Podcast: Autonomy & Safety</button></li>
+            <li><button data-track="Ambient drive">Ambient drive</button></li>
+            <li><button data-track="City commute beats">City commute beats</button></li>
+          </ul>
+        </section>
+      `;
+    },
+    safety: () => {
+      return `
+        <section class="side-panel__section">
+          <h3>Health</h3>
+          <div class="side-panel__text">Sensors: ${state.sensorsHealthy ? "All operational" : "Attention required"}</div>
+          <div class="side-panel__text">Mode: ${state.mode}</div>
+          <div class="side-panel__text">Speed: ${Math.round(state.speed)} km/h</div>
+          <div class="side-panel__text">Traffic: ${state.traffic}</div>
+        </section>
+        <section class="side-panel__section">
+          <h3>Quick Actions</h3>
+          <ul class="side-panel__list">
+            <li><button data-action="emergency">Emergency Stop</button></li>
+            <li><button data-action="selfTest">Run Sensor Self-Test</button></li>
+          </ul>
+        </section>
+      `;
+    },
+    settings: () => {
+      return `
+        <section class="side-panel__section">
+          <h3>Preferences</h3>
+          <ul class="side-panel__list">
+            <li><button data-action="toggleNightMode">Night mode</button></li>
+            <li><button data-action="toggleNotifications">Notifications</button></li>
+            <li><button data-action="resetDefaults">Reset defaults</button></li>
+          </ul>
+        </section>
+      `;
+    },
+  };
+
+  elems.sideTitle.textContent = titleMap[type] || "Features";
+  elems.sideBody.innerHTML = (bodyRenderers[type] || (() => ""))();
+  elems.sideFooter.innerHTML = "";
+
+  // Wire item buttons
+  elems.sideBody.querySelectorAll("button").forEach((btn) => {
+    const track = btn.dataset.track;
+    const action = btn.dataset.action;
+
+    if (track) {
+      btn.addEventListener("click", () => {
+        state.media.track = track;
+        state.media.playing = true;
+        updateStatus();
+        renderSidePanel("media");
+      });
+      return;
+    }
+
+    if (action) {
+      btn.addEventListener("click", () => {
+        if (action === "emergency") {
+          panicStop();
+        }
+        if (action === "selfTest") {
+          state.sensorsHealthy = true;
+          updateStatus();
+          showAction("Sensor Self-Test", "Running diagnostics on cameras, lidar, radar, and ultrasonic sensors.\n\nAll systems nominal.");
+        }
+        if (action === "toggleNightMode") {
+          document.body.classList.toggle("night-mode");
+          showAction("Night Mode", `Night mode ${document.body.classList.contains("night-mode") ? "enabled" : "disabled"}.`);
+        }
+        if (action === "toggleNotifications") {
+          showAction("Notifications", "Notification preferences can be managed in the full settings screen.");
+        }
+        if (action === "resetDefaults") {
+          showAction("Reset Defaults", "Restored to default preferences.");
+        }
+      });
+    }
+  });
+
+  elems.sidePanel.setAttribute("aria-hidden", "false");
+}
+
 function setupEventListeners() {
   buttons.switchModeBtn.addEventListener("click", toggleMode);
   buttons.emergencyStopBtn.addEventListener("click", panicStop);
@@ -258,7 +374,10 @@ function setupEventListeners() {
   buttons.prevTrack.addEventListener("click", () => skipTrack(-1));
   buttons.nextTrack.addEventListener("click", () => skipTrack(1));
   buttons.browseMediaBtn.addEventListener("click", () => {
-    showAction("Browse Media", "Select music, podcasts, or radio stations suitable for the drive.");
+    document.querySelectorAll(".tab-btn").forEach((btn) => btn.classList.remove("active"));
+    const mediaTab = document.querySelector(".tab-btn[data-panel='media']");
+    if (mediaTab) mediaTab.classList.add("active");
+    renderSidePanel("media");
   });
 
   buttons.comfortModeBtn.addEventListener("click", () => {
@@ -268,7 +387,10 @@ function setupEventListeners() {
   buttons.lockToggleBtn.addEventListener("click", toggleLock);
 
   buttons.settingsBtn.addEventListener("click", () => {
-    showAction("Settings", "Access advanced preferences for navigation, safety, and user profiles.");
+    document.querySelectorAll(".tab-btn").forEach((btn) => btn.classList.remove("active"));
+    const settingsTab = document.querySelector(".tab-btn[data-panel='settings']");
+    if (settingsTab) settingsTab.classList.add("active");
+    renderSidePanel("settings");
   });
 
   elems.modalBackdrop.addEventListener("click", modal.close);
@@ -276,7 +398,19 @@ function setupEventListeners() {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       modal.close();
+      closeSidePanel();
     }
+  });
+
+  elems.sideBackdrop.addEventListener("click", closeSidePanel);
+  elems.sideClose.addEventListener("click", closeSidePanel);
+
+  document.querySelectorAll(".tab-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach((btn) => btn.classList.remove("active"));
+      button.classList.add("active");
+      renderSidePanel(button.dataset.panel);
+    });
   });
 }
 
