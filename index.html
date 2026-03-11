@@ -40,6 +40,10 @@
         <div class="status-title">Traffic</div>
         <div class="status-value" id="trafficValue">Light</div>
       </div>
+      <div class="status-item">
+        <div class="status-title">Trip</div>
+        <div class="status-value" id="tripValue">0 km</div>
+      </div>
     </div>
   </header>
 
@@ -47,8 +51,11 @@
     <section class="panel map-panel" aria-label="Navigation map">
       <div class="panel-header">
         <h1>Map & Navigation</h1>
-        <button class="mini-btn" id="zoomIn">+</button>
-        <button class="mini-btn" id="zoomOut">–</button>
+        <div class="map-header-actions">
+          <button class="mini-btn" id="zoomIn">+</button>
+          <button class="mini-btn" id="zoomOut">–</button>
+          <button class="mini-btn" id="fullMapBtn">⤢</button>
+        </div>
       </div>
       <div class="map" id="map">Loading map…</div>
       <div class="route-panel">
@@ -113,6 +120,12 @@
           <button class="card-btn" id="lockToggleBtn">Lock / Unlock</button>
         </div>
 
+        <div class="card" id="carCard">
+          <div class="card-title">Car Options</div>
+          <div class="card-body">Adjust lighting, seats, and driving preferences.</div>
+          <button class="card-btn" id="carOptionsBtn">Car Controls</button>
+        </div>
+
         <div class="card" id="settingsCard">
           <div class="card-title">Settings</div>
           <div class="card-body" id="settingsStatus">Tap to customize</div>
@@ -139,16 +152,31 @@
     <div class="side-panel__backdrop" id="sideBackdrop"></div>
     <aside class="side-panel__content" role="complementary">
       <header class="side-panel__header">
-        <div class="side-panel__tabs">
-          <button class="tab-btn active" data-panel="media" aria-controls="sideBody">Media</button>
-          <button class="tab-btn" data-panel="safety" aria-controls="sideBody">Safety</button>
-          <button class="tab-btn" data-panel="settings" aria-controls="sideBody">Settings</button>
+        <div>
+          <div class="side-panel__tabs">
+            <button class="tab-btn active" data-panel="media" aria-controls="sideBody">Media</button>
+            <button class="tab-btn" data-panel="safety" aria-controls="sideBody">Safety</button>
+            <button class="tab-btn" data-panel="trip" aria-controls="sideBody">Trip</button>
+            <button class="tab-btn" data-panel="car" aria-controls="sideBody">Car</button>
+            <button class="tab-btn" data-panel="settings" aria-controls="sideBody">Settings</button>
+          </div>
+          <div class="side-panel__title" id="sideTitle">Media Library</div>
         </div>
         <button class="side-close" id="sideClose">✕</button>
       </header>
       <div class="side-panel__body" id="sideBody"></div>
       <div class="side-panel__footer" id="sideFooter"></div>
     </aside>
+  </div>
+
+  <!-- Full-screen map overlay -->
+  <div class="map-fullscreen" id="mapFull" aria-hidden="true">
+    <div class="map-fullscreen__header">
+      <button class="mini-btn" id="mapFullClose">✕</button>
+      <div class="map-fullscreen__title">Map View</div>
+      <button class="mini-btn" id="mapFullMode">🔎</button>
+    </div>
+    <div class="map-fullscreen__body" id="mapFullBody">Full-screen map</div>
   </div>
 
   <!-- Modal Templates -->

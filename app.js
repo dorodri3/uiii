@@ -6,9 +6,17 @@ const state = {
   gpsSignal: 12,
   cabinTemp: 22,
   fanLevel: 2,
+  interiorLighting: true,
+  ambientLighting: true,
+  interiorBrightness: 0.8,
+  ambientBrightness: 0.68,
+  seatPosition: 54,
+  activeProfile: "Driver 1",
   media: {
     playing: false,
     track: "No media playing",
+    volume: 0.8,
+    progress: 0,
   },
   passengers: 0,
   securityLocked: true,
@@ -29,6 +37,10 @@ const elems = {
   securityStatus: document.getElementById("securityStatus"),
   settingsStatus: document.getElementById("settingsStatus"),
   map: document.getElementById("map"),
+  mapFull: document.getElementById("mapFull"),
+  mapFullBody: document.getElementById("mapFullBody"),
+  mapFullClose: document.getElementById("mapFullClose"),
+  mapFullMode: document.getElementById("mapFullMode"),
   modal: document.getElementById("modal"),
   modalTitle: document.getElementById("modalTitle"),
   modalBody: document.getElementById("modalBody"),
@@ -57,27 +69,11 @@ const buttons = {
   playPause: document.getElementById("playPause"),
   nextTrack: document.getElementById("nextTrack"),
   browseMediaBtn: document.getElementById("browseMediaBtn"),
+  carOptionsBtn: document.getElementById("carOptionsBtn"),
   comfortModeBtn: document.getElementById("comfortModeBtn"),
   lockToggleBtn: document.getElementById("lockToggleBtn"),
   settingsBtn: document.getElementById("settingsBtn"),
-};
-
-const modal = {
-  open({ title, body, footer }) {
-    elems.modalTitle.textContent = title;
-    elems.modalBody.innerHTML = body;
-    elems.modalFooter.innerHTML = "";
-
-    if (footer) {
-      footer.forEach((btn) => {
-        const button = document.createElement("button");
-        button.className = "card-btn";
-        button.textContent = btn.label;
-        button.addEventListener("click", () => {
-          btn.onClick();
-          if (btn.closeOnClick !== false) modal.close();
-        });
-        elems.modalFooter.appendChild(button);
+  fullMapBtn: document.getElementById("fullMapBtn"),
       });
     }
 
@@ -168,6 +164,7 @@ function toggleLock() {
 function togglePlay() {
   state.media.playing = !state.media.playing;
   state.media.track = state.media.playing ? "Driving playlist" : "No media playing";
+  if (state.media.playing) state.media.progress = 0;
   updateStatus();
 }
 
@@ -183,6 +180,7 @@ function skipTrack(delta) {
   const nextIndex = (currentIndex + delta + playlist.length) % playlist.length;
   state.media.track = playlist[nextIndex];
   state.media.playing = true;
+  state.media.progress = 0;
   updateStatus();
 }
 
@@ -203,6 +201,10 @@ function simulateDrive() {
 
   if (Math.random() < 0.01) {
     state.sensorsHealthy = false;
+  }
+
+  if (state.media.playing) {
+    state.media.progress = Math.min(1, state.media.progress + 0.01);
   }
 
   updateStatus();
@@ -232,15 +234,34 @@ function renderSidePanel(type) {
   const titleMap = {
     media: "Media Library",
     safety: "Safety Center",
+    car: "Car Controls",
     settings: "Settings",
   };
 
   const bodyRenderers = {
     media: () => {
+      const playPauseLabel = state.media.playing ? "Pause" : "Play";
+      const percent = Math.round(state.media.progress * 100);
+
       return `
         <section class="side-panel__section">
           <h3>Now Playing</h3>
           <div class="side-panel__text">${state.media.track}</div>
+          <div class="media-playback">
+            <button class="mini-btn" data-action="prevTrack">⏮</button>
+            <button class="mini-btn" data-action="togglePlay">${playPauseLabel}</button>
+            <button class="mini-btn" data-action="nextTrack">⏭</button>
+          </div>
+          <div class="media-progress">
+            <div class="media-progress__bar">
+              <div class="media-progress__fill" style="width: ${percent}%"></div>
+            </div>
+            <div class="media-progress__label">${percent}%</div>
+          </div>
+          <div class="media-volume">
+            <label>Volume</label>
+            <input type="range" min="0" max="1" step="0.01" value="${state.media.volume}" data-action="volume" />
+          </div>
         </section>
         <section class="side-panel__section">
           <h3>Playlists</h3>
@@ -262,12 +283,50 @@ function renderSidePanel(type) {
           <div class="side-panel__text">Mode: ${state.mode}</div>
           <div class="side-panel__text">Speed: ${Math.round(state.speed)} km/h</div>
           <div class="side-panel__text">Traffic: ${state.traffic}</div>
+          <div class="side-panel__text">GPS: ${state.gpsSignal} sats</div>
         </section>
         <section class="side-panel__section">
           <h3>Quick Actions</h3>
           <ul class="side-panel__list">
             <li><button data-action="emergency">Emergency Stop</button></li>
             <li><button data-action="selfTest">Run Sensor Self-Test</button></li>
+            <li><button data-action="toggleMode">Toggle Drive Mode</button></li>
+          </ul>
+        </section>
+      `;
+    },
+    car: () => {
+      return `
+        <section class="side-panel__section">
+          <h3>Climate</h3>
+          <div class="slider-row">
+            <label>Cabin temp: <span>${state.cabinTemp}°C</span></label>
+            <input type="range" data-action="range" data-key="cabinTemp" min="16" max="28" step="1" value="${state.cabinTemp}" />
+          </div>
+          <div class="slider-row">
+            <label>Fan speed: <span>${state.fanLevel}</span></label>
+            <input type="range" data-action="range" data-key="fanLevel" min="0" max="5" step="1" value="${state.fanLevel}" />
+          </div>
+        </section>
+        <section class="side-panel__section">
+          <h3>Lighting</h3>
+          <div class="slider-row">
+            <label>Interior: <span>${Math.round(state.interiorBrightness * 100)}%</span></label>
+            <input type="range" data-action="range" data-key="interiorBrightness" min="0" max="1" step="0.01" value="${state.interiorBrightness}" />
+          </div>
+          <div class="slider-row">
+            <label>Ambient: <span>${Math.round(state.ambientBrightness * 100)}%</span></label>
+            <input type="range" data-action="range" data-key="ambientBrightness" min="0" max="1" step="0.01" value="${state.ambientBrightness}" />
+          </div>
+        </section>
+        <section class="side-panel__section">
+          <h3>Driver</h3>
+          <div class="slider-row">
+            <label>Seat position: <span>${state.seatPosition}</span></label>
+            <input type="range" data-action="range" data-key="seatPosition" min="0" max="100" step="1" value="${state.seatPosition}" />
+          </div>
+          <ul class="side-panel__list">
+            <li><button data-action="switchProfile">Switch Profile</button></li>
           </ul>
         </section>
       `;
@@ -299,6 +358,7 @@ function renderSidePanel(type) {
       btn.addEventListener("click", () => {
         state.media.track = track;
         state.media.playing = true;
+        state.media.progress = 0;
         updateStatus();
         renderSidePanel("media");
       });
@@ -325,8 +385,68 @@ function renderSidePanel(type) {
         if (action === "resetDefaults") {
           showAction("Reset Defaults", "Restored to default preferences.");
         }
+        if (action === "toggleMode") {
+          toggleMode();
+        }
+        if (action === "prevTrack") {
+          skipTrack(-1);
+        }
+        if (action === "nextTrack") {
+          skipTrack(1);
+        }
+        if (action === "togglePlay") {
+          togglePlay();
+        }
+        if (action === "tempDown") {
+          adjustTemp(-1);
+        }
+        if (action === "tempUp") {
+          adjustTemp(1);
+        }
+        if (action === "toggleFan") {
+          toggleFan();
+        }
+        if (action === "toggleInteriorLight") {
+          state.interiorLighting = !state.interiorLighting;
+          showAction("Interior Lighting", `Interior lighting ${state.interiorLighting ? "enabled" : "disabled"}.`);
+        }
+        if (action === "toggleAmbient") {
+          state.ambientLighting = !state.ambientLighting;
+          showAction("Ambient Lighting", `Ambient lighting ${state.ambientLighting ? "enabled" : "disabled"}.`);
+        }
+        if (action === "switchProfile") {
+          state.activeProfile = state.activeProfile === "Driver 1" ? "Driver 2" : "Driver 1";
+          showAction("Driver Profile", `Switched to ${state.activeProfile}.`);
+        }
+        if (action === "seatAdjust") {
+          showAction("Seat Adjustment", "Use the steering wheel controls to fine-tune your seat position.");
+        }
       });
     }
+  });
+
+  elems.sideBody.querySelectorAll("input[data-action='volume']").forEach((input) => {
+    input.addEventListener("input", (event) => {
+      state.media.volume = Number(event.target.value);
+      updateStatus();
+    });
+  });
+
+  elems.sideBody.querySelectorAll("input[data-action='range']").forEach((input) => {
+    input.addEventListener("input", (event) => {
+      const key = event.target.dataset.key;
+      if (!key) return;
+      const value = Number(event.target.value);
+      state[key] = value;
+      // keep values in range
+      if (key === "cabinTemp") state.cabinTemp = Math.min(28, Math.max(16, value));
+      if (key === "fanLevel") state.fanLevel = Math.min(5, Math.max(0, value));
+      if (key === "interiorBrightness") state.interiorBrightness = Math.min(1, Math.max(0, value));
+      if (key === "ambientBrightness") state.ambientBrightness = Math.min(1, Math.max(0, value));
+      if (key === "seatPosition") state.seatPosition = Math.min(100, Math.max(0, value));
+      updateStatus();
+      renderSidePanel("car");
+    });
   });
 
   elems.sidePanel.setAttribute("aria-hidden", "false");
@@ -378,6 +498,13 @@ function setupEventListeners() {
     const mediaTab = document.querySelector(".tab-btn[data-panel='media']");
     if (mediaTab) mediaTab.classList.add("active");
     renderSidePanel("media");
+  });
+
+  buttons.carOptionsBtn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach((btn) => btn.classList.remove("active"));
+    const carTab = document.querySelector(".tab-btn[data-panel='car']");
+    if (carTab) carTab.classList.add("active");
+    renderSidePanel("car");
   });
 
   buttons.comfortModeBtn.addEventListener("click", () => {
