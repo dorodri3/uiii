@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Self-Driving Vehicle UI</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="top-bar">
+    <div class="brand">
+      <span class="brand__logo">🛡</span>
+      <div>
+        <div class="brand__title">Autopilot Hub</div>
+        <div class="brand__subtitle">Mode: <span id="modeLabel">Autonomous</span></div>
+      </div>
+    </div>
+
+    <div class="status-row">
+      <div class="status-item">
+        <div class="status-title">Speed</div>
+        <div class="status-value" id="speedValue">0 km/h</div>
+      </div>
+      <div class="status-item">
+        <div class="status-title">Range</div>
+        <div class="status-value" id="rangeValue">-- km</div>
+      </div>
+      <div class="status-item">
+        <div class="status-title">Traffic</div>
+        <div class="status-value" id="trafficValue">Light</div>
+      </div>
+    </div>
+
+    <div class="top-controls">
+      <button class="control-btn" id="emergencyStopBtn">EMERGENCY STOP</button>
+      <button class="control-btn" id="switchModeBtn">Switch Mode</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="panel map-panel" aria-label="Navigation map">
+      <div class="panel-header">
+        <h1>Map & Navigation</h1>
+        <button class="mini-btn" id="zoomIn">+</button>
+        <button class="mini-btn" id="zoomOut">–</button>
+      </div>
+      <div class="map" id="map">Loading map…</div>
+      <div class="route-panel">
+        <button class="action-btn" id="rerouteBtn">Reroute</button>
+        <button class="action-btn" id="parkBtn">Find Parking</button>
+        <button class="action-btn" id="destBtn">Set Destination</button>
+      </div>
+    </section>
+
+    <section class="panel system-panel" aria-label="System status & controls">
+      <div class="panel-header">
+        <h1>System</h1>
+      </div>
+      <div class="system-grid">
+        <div class="card" id="sensorCard">
+          <div class="card-title">Sensors</div>
+          <div class="card-body" id="sensorStatus">All operational</div>
+          <button class="card-btn" id="sensorTestBtn">Run Self-Test</button>
+        </div>
+
+        <div class="card" id="climateCard">
+          <div class="card-title">Climate</div>
+          <div class="card-body">
+            <div class="climate-row">
+              <span>Cabin</span>
+              <span id="cabinTemp">22°C</span>
+            </div>
+            <div class="climate-row">
+              <span>Fan</span>
+              <span id="fanLevel">2</span>
+            </div>
+          </div>
+          <div class="climate-controls">
+            <button class="mini-btn" id="tempDown">–</button>
+            <button class="mini-btn" id="tempUp">+</button>
+            <button class="mini-btn" id="fanToggle">Fan Auto</button>
+          </div>
+        </div>
+
+        <div class="card" id="mediaCard">
+          <div class="card-title">Media</div>
+          <div class="card-body media-body">
+            <div class="now-playing" id="nowPlaying">No media playing</div>
+            <div class="media-controls">
+              <button class="mini-btn" id="prevTrack">⏮</button>
+              <button class="mini-btn" id="playPause">▶️</button>
+              <button class="mini-btn" id="nextTrack">⏭</button>
+            </div>
+          </div>
+          <button class="card-btn" id="browseMediaBtn">Browse Podcasts</button>
+        </div>
+
+        <div class="card" id="passengerCard">
+          <div class="card-title">Passengers</div>
+          <div class="card-body" id="passengerStatus">No occupants detected</div>
+          <button class="card-btn" id="comfortModeBtn">Comfort Mode</button>
+        </div>
+
+        <div class="card" id="securityCard">
+          <div class="card-title">Security</div>
+          <div class="card-body" id="securityStatus">All doors locked</div>
+          <button class="card-btn" id="lockToggleBtn">Lock / Unlock</button>
+        </div>
+
+        <div class="card" id="settingsCard">
+          <div class="card-title">Settings</div>
+          <div class="card-body" id="settingsStatus">Tap to customize</div>
+          <button class="card-btn" id="settingsBtn">Settings</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-item">
+      <span>Autonomy&nbsp;v1.4</span>
+    </div>
+    <div class="footer-item">
+      <span id="connectionStatus">Connected • GPS: 12 sats</span>
+    </div>
+    <div class="footer-item">
+      <span id="timeDisplay"></span>
+    </div>
+  </footer>
+
+  <!-- Modal Templates -->
+  <div class="modal" id="modal" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal__backdrop" id="modalBackdrop"></div>
+    <div class="modal__content" role="document">
+      <div class="modal__header">
+        <h2 id="modalTitle">Title</h2>
+        <button class="modal__close" id="modalClose">✕</button>
+      </div>
+      <div class="modal__body" id="modalBody">Body text</div>
+      <div class="modal__footer" id="modalFooter"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
